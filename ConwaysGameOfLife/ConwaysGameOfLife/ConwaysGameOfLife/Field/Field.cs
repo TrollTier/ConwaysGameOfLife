@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Diagnostics;
 
-namespace ConwaysWayOfLife
+namespace ConwaysGameOfLife
 {
     class Field
     {
@@ -32,7 +33,7 @@ namespace ConwaysWayOfLife
         /// <summary>
         /// Gets the available cells.
         /// </summary>
-        public IEnumerable<bool> Cells
+        public bool[] Cells
         {
             get { return cells; }
         }
@@ -79,27 +80,9 @@ namespace ConwaysWayOfLife
                 throw new ArgumentException("Nunber of columns has to be at least 3.");
 
             this.rows = rows;
-            this.columns = columns; 
-        }
+            this.columns = columns;
 
-        public void InitializeCells()
-        {
             this.cells = new bool[rows * columns];
-
-            for (int i = 0; i < cells.Length; i++)
-            {
-                cells[i] = false; 
-            }
-
-            //this.cells = new Cell[rows, columns];
-
-            //for (int y = 0; y < rows; y++)
-            //{
-            //    for (int x = 0; x < columns; x++)
-            //    {
-            //        cells[y, x] = new Cell(false); 
-            //    }
-            //}
         }
 
         #endregion
@@ -108,7 +91,7 @@ namespace ConwaysWayOfLife
 
         /// <summary>
         /// Gets the cell at the specified positition in the 2-dimensional field
-        /// or null, if the coordinates are out of bounds.
+        /// or false, if the coordinates are out of bounds.
         /// </summary>
         /// <param name="row">The row to search at.</param>
         /// <param name="column">The column to search at.</param>
@@ -163,32 +146,33 @@ namespace ConwaysWayOfLife
         {
             bool[] newValues = new bool[rows * columns];
 
-            for (int y = 0; y < rows; y++)
+            int x;
+            int y;
+
+            for (int i = 0; i < cells.Length; i++)
             {
-                for (int x = 0; x < columns; x++)
-                {
-                    newValues[(y * columns) + x]
-                        = GetCellValue(cells[(y * columns) + x], x, y, rule);
-                }
+                y = i / columns;
+                x = i % columns;
+
+                newValues[i] = GetCellValue(cells[i], x, y, rule);
             }
 
             cells = newValues; 
         }
 
+        
         private bool GetCellValue(bool cell, int currX, int currY, ICellRule rule)
-        {
-            bool neighbour;
-            int livingNeighbours = 0;
+        {            
+            int livingNeighbours = 0;     
 
             for (int dX = -1; dX <= 1; dX++)
             {
                 for (int dY = -1; dY <= 1; dY++)
                 {
-                    if (!(dX == 0 && dY == 0))
+                    if (!(dX == 0 && dY == 0)
+                        && GetCellAt(currY + dY, currX + dX))
                     {
-                        neighbour = GetCellAt(currY + dY, currX + dX);
-                        if (neighbour)
-                            livingNeighbours++;
+                        livingNeighbours++;
                     }
                 }
             }

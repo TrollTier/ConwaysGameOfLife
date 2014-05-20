@@ -5,11 +5,11 @@ using System.Text;
 
 namespace ConwaysGameOfLife
 {
-    class RegularCellRule : ICellRule
+    class CopyCellRule : ICellRule
     {
         public bool GetAliveState(bool isCellAlive, int livingNeighbours)
         {
-            return ((isCellAlive && (livingNeighbours == 2)) || livingNeighbours == 3);
+            return livingNeighbours % 2 == 1; 
         }
     }
 }

@@ -5,8 +5,8 @@ using System.Text;
 
 namespace ConwaysGameOfLife
 {
-    interface ICellRule
+    interface IFieldInitializer
     {
-        bool GetAliveState(bool isCellAlive, int livingNeighbours);
+        void Initialize(Field field, int startX, int startY);
     }
 }

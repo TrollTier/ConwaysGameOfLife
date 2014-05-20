@@ -8,7 +8,6 @@ using Microsoft.Xna.Framework.GamerServices;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
-using ConwaysWayOfLife;
 using System.Diagnostics;
 
 namespace ConwaysGameOfLife
@@ -22,22 +21,23 @@ namespace ConwaysGameOfLife
         SpriteBatch spriteBatch;
 
         Field field;
-        ICellRule rule = new RegularCellRule();
+        ICellRule rule;
+        IFieldInitializer fieldInitializer; 
 
         Texture2D deadCellTexture;
         Texture2D livingCellTexture;
+        Texture2D cellsSheet; 
 
-        bool running = false; 
+        bool running = false;
+        Rectangle[] rects; 
 
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
-            graphics.PreferredBackBufferHeight = 200;
-            graphics.PreferredBackBufferWidth = 200;
-            
+            graphics.PreferredBackBufferHeight = 400;
+            graphics.PreferredBackBufferWidth = 400;
 
             TargetElapsedTime = TimeSpan.FromMilliseconds(1000 / 30);
-
             Content.RootDirectory = "Content";
         }
 
@@ -49,27 +49,35 @@ namespace ConwaysGameOfLife
         /// </summary>
         protected override void Initialize()
         {
-            field = new Field(200, 200);
+            field = new Field(400, 400);
+            fieldInitializer = new RandomFieldInitializer();
+            rule = new RegularCellRule();
             InitializeStartPopulation();
+
+            int fieldWidth = graphics.PreferredBackBufferWidth / field.Columns;
+            int fieldHeight = graphics.PreferredBackBufferHeight / field.Rows;
+
+            InitializeRectangles(fieldWidth, fieldHeight);
 
             base.Initialize();
         }
 
+        private void InitializeRectangles(int fieldWidth, int fieldHeight)
+        {
+            rects = new Rectangle[field.Columns * field.Rows];
+
+            for (int y = 0; y < field.Rows; y++)
+            {
+                for (int x = 0; x < field.Columns; x++)
+                {
+                    rects[y * field.Columns + x] = new Rectangle(x * fieldWidth, y * fieldHeight, fieldWidth, fieldHeight);
+                }
+            }
+        }
+
         private void InitializeStartPopulation()
         {
-            Random random = new Random();
-
-            int x;
-            int y;
-
-            field.InitializeCells();
-            for (int i = 0; i < (field.Columns * field.Rows) * 0.5; i++)
-            {
-                x = random.Next(0, field.Columns);
-                y = random.Next(0, field.Rows);
-
-                field.SetCell(y, x, true); 
-            }
+            fieldInitializer.Initialize(field, 50, 50); 
         }
 
         /// <summary>
@@ -84,6 +92,7 @@ namespace ConwaysGameOfLife
             // TODO: use this.Content to load your game content here
             deadCellTexture = Content.Load<Texture2D>("dead_cell");
             livingCellTexture = Content.Load<Texture2D>("living_cell");
+            cellsSheet = Content.Load<Texture2D>("cells"); 
         }
 
         /// <summary>
@@ -114,10 +123,8 @@ namespace ConwaysGameOfLife
             {
                 Stopwatch sw = new Stopwatch();
                 sw.Start();
-
                 field.UpdateCells(rule);
-
-                sw.Stop(); 
+                sw.Stop();
             }
 
             base.Update(gameTime);
@@ -135,7 +142,14 @@ namespace ConwaysGameOfLife
             {
                 InitializeStartPopulation(); 
             }
+            else if (keys.Contains(Keys.F3))
+            {
+                field.UpdateCells(rule);
+            }
         }
+
+        Rectangle deadCellSource = new Rectangle(0, 0, 50, 50);
+        Rectangle livingCellSource = new Rectangle(50, 0, 50, 50); 
 
         /// <summary>
         /// This is called when the game should draw itself.
@@ -145,32 +159,30 @@ namespace ConwaysGameOfLife
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            Stopwatch sw = new Stopwatch();
-            sw.Start(); 
-
             int fieldWidth = graphics.PreferredBackBufferWidth / field.Columns;
             int fieldHeight = graphics.PreferredBackBufferHeight / field.Rows;
+            int columns = field.Columns; 
+
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
 
             spriteBatch.Begin();
 
-            for (int y = 0; y < field.Rows; y++)
+            bool[] cells = field.Cells;
+            for (int i = 0; i < cells.Length; i++)
             {
-                for (int x = 0; x < field.Columns; x++)
+                if (cells[i])
                 {
-                    if (field.GetCellAt(y, x))
-                    {
-                        spriteBatch.Draw(livingCellTexture, new Rectangle(x * fieldWidth, y * fieldHeight, fieldWidth, fieldHeight), Color.White);
-                    }
-                    else
-                    {
-                        spriteBatch.Draw(deadCellTexture, new Rectangle(x * fieldWidth, y * fieldHeight, fieldWidth, fieldHeight), Color.White);
-                    }
+                    spriteBatch.Draw(cellsSheet, rects[i], livingCellSource, Color.White);
+                }
+                else
+                {
+                    spriteBatch.Draw(cellsSheet, rects[i], deadCellSource, Color.White); 
                 }
             }
 
             spriteBatch.End();
-
-            sw.Stop(); 
+            sw.Stop();
 
             base.Draw(gameTime);
         }
